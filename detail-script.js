@@ -3,12 +3,43 @@ document.addEventListener('DOMContentLoaded', function() {
     const keywordFromQuery = params.get('q') || '';
     
     const cleanQuery = keywordFromQuery.replace(/-\d+$/, '');
+
+    // --- MODIFIKASI: Fetch URL Redome ---
+    let redomeLinks = [];
+    fetch('https://seribudollarperhari.github.io/banner/link.txt')
+        .then(response => response.text())
+        .then(data => {
+            // Memisahkan baris dan hanya mengambil baris yang valid
+            redomeLinks = data.split('\n').map(line => line.trim()).filter(line => line.startsWith('http'));
+        })
+        .catch(error => {
+            console.error('Gagal mengambil daftar link redome:', error);
+        });
+
+    // Menambahkan event listener global untuk klik ke link redome
+    document.addEventListener('click', function(e) {
+        const redomeBtn = e.target.closest('.redome-link');
+        if (redomeBtn) {
+            e.preventDefault();
+            if (redomeLinks.length > 0) {
+                // Pilih link secara acak
+                const randomLink = redomeLinks[Math.floor(Math.random() * redomeLinks.length)];
+                window.location.href = randomLink;
+            } else {
+                // Fallback jika link belum ter-load atau gagal
+                window.location.href = 'index.html';
+            }
+        }
+    });
+    // ------------------------------------
     
     if (!cleanQuery) {
         runAGC('');
         return;
     }
+
     const targetHtml = cleanQuery + '.html';
+
     fetch(targetHtml)
         .then(response => {
             if (response.ok) {
@@ -33,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const relatedPostsContainer = document.getElementById('related-posts-container');
         
         const displayedKeywords = new Set();
+
         if (keyword) {
             displayedKeywords.add(keyword.toLowerCase());
         }
@@ -102,7 +134,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // 2:3 Ratio API parameters
             const queryImage = term + " nail art manicure nails";
             const mainImageUrl = `https://tse1.mm.bing.net/th?q=${encodeURIComponent(queryImage)}&w=600&h=900&c=7&rs=1&p=0&dpr=1.5&pid=1.7`;
-            if(detailImageContainer) detailImageContainer.innerHTML = `<img src="${mainImageUrl}" alt="${newTitle}" style="width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:8px;">`;
+            
+            // MODIFIKASI: Wrap gambar utama dengan class redome-link untuk trigger redirect
+            if(detailImageContainer) detailImageContainer.innerHTML = `<a href="javascript:void(0)" class="redome-link"><img src="${mainImageUrl}" alt="${newTitle}" style="width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:8px;"></a>`;
             
             fetchDescriptionTemplate(term, newTitle);
         }
@@ -130,14 +164,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectedKeywords.forEach(relatedTerm => {
                         displayedKeywords.add(relatedTerm.toLowerCase());
                         
-                        const keywordForUrl = relatedTerm.replace(/\s/g, '-').toLowerCase();
-                        const linkUrl = `detail.html?q=${encodeURIComponent(keywordForUrl)}`;
-                        
                         const queryImage = relatedTerm + " nail art manicure";
                         const imageUrl = `https://tse1.mm.bing.net/th?q=${encodeURIComponent(queryImage)}&w=400&h=600&c=7&rs=1&p=0&dpr=1.5&pid=1.7`;
                         
                         const newRelatedTitle = generateSeoTitle(relatedTerm);
-                        const card = `<article class="content-card"><a href="${linkUrl}"><img src="${imageUrl}" alt="${newRelatedTitle}" loading="lazy"><div class="content-card-body"><h3>${newRelatedTitle}</h3></div></a></article>`;
+                        
+                        // MODIFIKASI: Menggunakan class redome-link dan menampilkan teks dari txt (display:none dihapus)
+                        const card = `<article class="content-card"><a href="javascript:void(0)" class="redome-link"><img src="${imageUrl}" alt="${newRelatedTitle}" loading="lazy"><div class="content-card-body">${capitalizeEachWord(relatedTerm)}</div></a></article>`;
+                        
                         if(relatedPostsContainer) relatedPostsContainer.innerHTML += card;
                     });
                     checkSectionDisplay();
@@ -185,17 +219,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     displayedKeywords.add(termLower);
                     relatedCount++;
                     
-                    const keywordForUrl = cleanTerm.replace(/\s/g, '-').toLowerCase();
-                    const linkUrl = `detail.html?q=${encodeURIComponent(keywordForUrl)}`;
-                    
                     const queryImage = cleanTerm + " nail art manicure nails";
                     const imageUrl = `https://tse1.mm.bing.net/th?q=${encodeURIComponent(queryImage)}&w=400&h=600&c=7&rs=1&p=0&dpr=1.5&pid=1.7`;
                     
                     const newRelatedTitle = generateSeoTitle(cleanTerm);
-                    const card = `<article class="content-card"><a href="${linkUrl}"><img src="${imageUrl}" alt="${newRelatedTitle}" loading="lazy"><div class="content-card-body"><h3>${newRelatedTitle}</h3></div></a></article>`;
+                    
+                    // MODIFIKASI: Menggunakan class redome-link dan menampilkan teks original dari bawaan API (cleanTerm)
+                    const card = `<article class="content-card"><a href="javascript:void(0)" class="redome-link"><img src="${imageUrl}" alt="${newRelatedTitle}" loading="lazy"><div class="content-card-body"><h3>${capitalizeEachWord(cleanTerm)}</h3></div></a></article>`;
+                    
                     if(relatedPostsContainer) relatedPostsContainer.innerHTML += card;
                 });
             }
+            
             appendRandomKeywords();
         };
 
